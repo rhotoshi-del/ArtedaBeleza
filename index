@@ -36,7 +36,7 @@
 
   <script>
     // Cole aqui a URL do Web App gerada no Google Apps Script
-    const GOOGLE_SCRIPT_URL = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/u/0/home/projects/19iQguGthXCpcxYYAfCQgV82VhOxtyidGyUFqyHnlrZg7u94gQrd10tQg/edit";
 
     let lastScannedCode = null;
     let isProcessing = false;
