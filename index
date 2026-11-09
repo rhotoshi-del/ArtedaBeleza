@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arte da Beleza - Leitor de Estoque</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { padding: 16px; margin: 0; background-color: #f5f5f7; color: #333; }
+    h2 { text-align: center; color: #1d1d1f; margin-bottom: 16px; }
+    .box { background: white; padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
+    .product-info { border-left: 4px solid #0071e3; padding-left: 12px; margin-top: 10px; }
+    .product-info p { margin: 6px 0; }
+    .status-loading { color: #0071e3; font-weight: bold; }
+    .status-error { color: #ff3b30; font-weight: bold; }
+    .status-success { color: #34c759; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>Arte da Beleza - Consulta de Estoque</h2>
+
+  <div class="box">
+    <label><strong>Câmera Traseira:</strong></label>
+    <div id="reader"></div>
+  </div>
+
+  <div class="box">
+    <label><strong>Resultado da Consulta:</strong></label>
+    <div id="result">
+      <p style="color: #86868b;">Aguardando leitura do código de barras...</p>
+    </div>
+  </div>
+
+  <script>
+    // Cole aqui a URL do Web App gerada no Google Apps Script
+    const GOOGLE_SCRIPT_URL = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+
+    let lastScannedCode = null;
+    let isProcessing = false;
+
+    async function buscarNoGoogleDrive(codigo) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `<p class="status-loading">🔍 Buscando código ${codigo} na planilha...</p>`;
+
+      try {
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?codigo=${encodeURIComponent(codigo)}`);
+        const data = await response.json();
+
+        if (data.success) {
+          let html = `<div class="product-info">`;
+          html += `<p class="status-success">✔ Produto Encontrado!</p>`;
+          html += `<p><strong>Código:</strong> ${codigo}</p>`;
+          
+          for (const [key, value] of Object.entries(data.product)) {
+            html += `<p><strong>${key}:</strong> ${value}</p>`;
+          }
+          html += `</div>`;
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="product-info" style="border-color: #ff3b30;">
+              <p class="status-error">❌ Produto não encontrado</p>
+              <p><strong>Código Lido:</strong> ${codigo}</p>
+            </div>`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<p class="status-error">Erro ao conectar com o Google Drive. Verifique a internet e a URL da API.</p>`;
+      } finally {
+        setTimeout(() => { isProcessing = false; }, 3000); // Aguarda 3s antes de permitir nova leitura
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      if (isProcessing || decodedText === lastScannedCode) return;
+      
+      isProcessing = true;
+      lastScannedCode = decodedText;
+      buscarNoGoogleDrive(decodedText);
+    }
+
+    function iniciarCamera() {
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 150 },
+          facingMode: "environment" // Seleciona a câmera traseira do Galaxy S20
+        },
+        false
+      );
+      html5QrcodeScanner.render(onScanSuccess);
+    }
+
+    window.addEventListener("load", iniciarCamera);
+  </script>
+</body>
+</html>
